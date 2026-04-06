@@ -49,12 +49,24 @@ class KAgent:
 
         return SYSTEM_PROMPT.format(context=context if context else "No profile data yet — this is an early session.")
 
+    def _ensure_rig_awake(self):
+        """Wake the KLLM rig if it's offline. No-op if RIG_MAC not configured."""
+        from ..core.config import RIG_MAC_ADDRESS, RIG_IP
+        if not RIG_MAC_ADDRESS or not RIG_IP:
+            return  # rig not configured yet — assume local
+        import subprocess, sys
+        from pathlib import Path
+        wake_script = Path(__file__).parent.parent / "scripts" / "wake.py"
+        subprocess.run([sys.executable, str(wake_script)], check=False)
+
     def _needs_research(self, query: str) -> bool:
         q = query.lower()
         return any(trigger in q for trigger in RESEARCH_TRIGGERS)
 
     def ask(self, query: str) -> str:
-        """Send a query to K. Routes to web research if needed."""
+        """Send a query to K. Wakes rig if needed, routes to research if needed."""
+        self._ensure_rig_awake()
+
         if self._needs_research(query):
             return self._research(query)
 
