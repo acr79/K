@@ -85,6 +85,13 @@ def cmd_profile(args):
     print_profile_summary()
 
 
+def cmd_research(args):
+    bootstrap()
+    from agent.tools import Researcher
+    researcher = Researcher()
+    researcher.run(args.query)
+
+
 def main():
     parser = argparse.ArgumentParser(prog="k", description="K — Kenny's personal AI")
     sub = parser.add_subparsers(dest="command")
@@ -98,6 +105,9 @@ def main():
     sub.add_parser("voice", help="Voice mode")
     sub.add_parser("profile", help="Show current profile summary")
 
+    res = sub.add_parser("research", help="Research a topic with live web data")
+    res.add_argument("query", help="What to research (quote the full query)")
+
     imp = sub.add_parser("import", help="Import inventory data")
     imp.add_argument("type", choices=["guns"], help="Data type to import")
     imp.add_argument("file", help="Path to CSV file")
@@ -105,7 +115,8 @@ def main():
 
     args = parser.parse_args()
 
-    if args.command == "init":        cmd_init(args)
+    if args.command == "research":    cmd_research(args)
+    elif args.command == "init":      cmd_init(args)
     elif args.command == "interview": cmd_interview(args)
     elif args.command == "chat":      cmd_chat(args)
     elif args.command == "voice":     cmd_voice(args)

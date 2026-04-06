@@ -4,6 +4,16 @@ from openai import OpenAI
 from ..core.config import KLLM_BASE_URL, KLLM_MODEL, KLLM_API_KEY, MAX_TOKENS, STREAM_RESPONSES
 from .memory import get_context, get_inventory_context
 
+# Keywords that trigger web research instead of memory-only answers
+RESEARCH_TRIGGERS = [
+    "new ", "latest ", "recent ", "release", "just came out",
+    "worth buying", "should i buy", "is it worth", "compare",
+    "vs ", " vs ", "review", "2024", "2025", "2026",
+    "california law", "ca law", "legal in california", "legal in ca",
+    "research", "look up", "find me", "what's out there",
+    "best ", "top ", "recommend", "suggestion",
+]
+
 
 SYSTEM_PROMPT = """You are K — Kenny's personal AI. You know Kenny well.
 
@@ -39,18 +49,34 @@ class KAgent:
 
         return SYSTEM_PROMPT.format(context=context if context else "No profile data yet — this is an early session.")
 
-    def ask(self, query: str) -> str:
-        """Send a query to K and get a response."""
-        system = self._build_system(query)
+    def _needs_research(self, query: str) -> bool:
+        q = query.lower()
+        return any(trigger in q for trigger in RESEARCH_TRIGGERS)
 
+    def ask(self, query: str) -> str:
+        """Send a query to K. Routes to web research if needed."""
+        if self._needs_research(query):
+            return self._research(query)
+
+        system = self._build_system(query)
         messages = [{"role": "system", "content": system}]
-        messages.extend(self.history[-10:])  # keep last 5 exchanges
+        messages.extend(self.history[-10:])
         messages.append({"role": "user", "content": query})
 
         if STREAM_RESPONSES and not self.voice_mode:
             return self._stream(messages)
         else:
             return self._complete(messages)
+
+    def _research(self, query: str) -> str:
+        """Route query through the full web research pipeline."""
+        from .tools import Researcher
+        researcher = Researcher()
+        result = researcher.run(query)
+        # Add to conversation history so follow-ups have context
+        self.history.append({"role": "user", "content": query})
+        self.history.append({"role": "assistant", "content": result})
+        return result
 
     def _stream(self, messages: list) -> str:
         response = self.client.chat.completions.create(
