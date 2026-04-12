@@ -179,5 +179,5 @@ k chat
 | KLLM API | http://192.168.1.24:8080/v1 |
 | Qdrant | http://192.168.1.24:6333 |
 | Ollama | http://192.168.1.24:11434 |
-| SSH | `ssh kenny@192.168.1.24` |
-| Remote VS Code | `code --remote ssh-remote+kenny@192.168.1.24 C:/K` |
+| SSH | `ssh kmoy@kllm.lan` |
+| Remote VS Code | `code --remote ssh-remote+kmoy@kllm.lan C:/K` |
