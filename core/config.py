@@ -1,7 +1,33 @@
 """K configuration — local defaults, cloud-swappable."""
 
 import os
+import subprocess
 from pathlib import Path
+
+# ── SOPS secrets loader ───────────────────────────────────────────────────────
+# If secrets.enc.yaml exists, decrypt it and inject into os.environ before
+# anything else reads from it.
+def _load_sops_secrets():
+    secrets_file = Path(__file__).parent.parent / "secrets.enc.yaml"
+    if not secrets_file.exists():
+        return
+    try:
+        result = subprocess.run(
+            ["sops", "decrypt", "--output-type", "dotenv", str(secrets_file)],
+            capture_output=True, text=True, check=True,
+            env={**os.environ, "SOPS_AGE_KEY_FILE": str(
+                Path.home() / ".config/sops/age/keys.txt"
+            )},
+        )
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, _, val = line.partition("=")
+                os.environ.setdefault(key.strip(), val.strip().strip('"'))
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass  # sops not available or decryption failed — fall through to .env
+
+_load_sops_secrets()
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 K_HOME = Path(os.environ.get("K_HOME", Path.home() / ".k"))

@@ -1,0 +1,3 @@
+creation_rules:
+  - path_regex: secrets(\.enc)?\.yaml$
+    age: age1teahm4rz8xqfrl8hmakyfka6j6j644fkwyvs6rh2tpn0rqu9fppqprfy5p

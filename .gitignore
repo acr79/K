@@ -1,4 +1,5 @@
 .env
+secrets.yaml
 __pycache__/
 *.pyc
 *.db
